@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lumina Abyssal Academy: Archive</title>
+    <style>
+        /* 🎨 폰트 임포트 */
+        @import url('https://fonts.googleapis.com/css2?family=Song+Myung&family=Nanum+Myeongjo:wght@700;800&family=Cinzel:wght@700;900&display=swap');
+
+        /* --- 환경 설정 --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Nanum Myeongjo', serif;
+            background: #000b11 url('background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff; overflow-x: hidden; min-height: 100vh;
+        }
+
+        /* 🌊 수중 효과 */
+        body::after {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 75%);
+            pointer-events: none; z-index: 1;
+        }
+        .bubble {
+            position: fixed; bottom: -50px; background: rgba(255,255,255,0.3);
+            border-radius: 50%; animation: rise 8s infinite ease-in; z-index: 0;
+        }
+        @keyframes rise { 0% { transform: translateY(0); } 100% { transform: translateY(-110vh); } }
+
+        /* --- ⚡ 인트로 (1.8초 최적화) --- */
+        #intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 10000; display: flex; justify-content: center; align-items: center;
+            animation: fadeOverlay 1.8s ease-in-out forwards;
+        }
+        #intro-symbol {
+            width: clamp(160px, 35vw, 420px);
+            opacity: 0; transform: scale(0.85); filter: blur(15px);
+            animation: symbolShow 1.5s ease-in-out forwards;
+        }
+        @keyframes symbolShow {
+            0% { opacity: 0; filter: blur(10px); }
+            40%, 75% { opacity: 1; filter: blur(0); transform: scale(1); }
+            100% { opacity: 0; filter: blur(15px); transform: scale(1.05); }
+        }
+        @keyframes fadeOverlay { 0%, 85% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+
+        /* --- 페이지 시스템 --- */
+        .page {
+            display: none; opacity: 0; filter: blur(20px); transform: scale(1.05);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 100vh; position: relative; z-index: 10; padding-bottom: 60px;
+        }
+        .page.active { display: block; opacity: 1; filter: blur(0); transform: scale(1); }
+
+        /* --- 검은색 박스 & 네이비 폰트 --- */
+        .glass-box {
+            background: linear-gradient(135deg, rgba(0,0,0,0.92) 0%, rgba(10,20,35,0.8) 100%);
+            backdrop-filter: blur(25px); border-radius: 30px;
+            padding: clamp(25px, 6vw, 60px); border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+        }
+        .navy-bold {
+            color: #002855; font-weight: 900;
+            text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.4);
+        }
+
+        /* --- UI 버튼 --- */
+        .main-title {
+            font-family: 'Song Myung', serif; font-size: clamp(2.3rem, 7vw, 4.5rem);
+            color: #001233; text-shadow: 0 0 25px rgba(0, 255, 255, 0.5); text-align: center; letter-spacing: 12px;
+        }
+        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; padding: 0 20px; }
+        .nav-btn {
+            padding: 18px 40px; font-family: 'Song Myung', serif; font-size: 1.1rem;
+            background: rgba(255,255,255,0.06); color: #001233; border: 1px solid #fff;
+            border-radius: 60px; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .nav-btn:hover { background: #00ffff; color: #001233; box-shadow: 0 0 15px #00ffff; transform: scale(1.03); }
+
+        /* --- 캐릭터 리스트 --- */
+        .container {
+            max-width: 1400px; margin: 0 auto; padding: 30px 20px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95); border-radius: 25px; 
+            overflow: hidden; cursor: pointer; transition: 0.4s; box-shadow: 0 10px 35px rgba(0,0,0,0.6);
+        }
+        .card:hover { transform: translateY(-10px); border: 3px solid #00ffff; }
+        .card img { width: 100%; height: 400px; object-fit: cover; }
+        .card-info { padding: 25px; text-align: center; }
+
+        /* --- 팝업 모달 최적화 --- */
+        #modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.96); display: none; justify-content: center; align-items: center;
+            z-index: 10000; backdrop-filter: blur(25px); padding: 15px;
+        }
+        .modal-content {
+            background: #fff; border-radius: 35px; max-width: 1050px; width: 100%;
+            display: flex; flex-direction: row; overflow: hidden; max-height: 90vh;
+            animation: zoomIn 0.3s ease-out;
+        }
+        /* 📍 지명 팝업 전용 소형화 */
+        .modal-content.compact { max-width: 600px; }
+        
+        .modal-img { width: 50%; height: auto; object-fit: cover; }
+        .modal-body { 
+            width: 50%; padding: clamp(30px, 5vw, 60px); overflow-y: auto; 
+            background: linear-gradient(135deg, #f8fbfd 0%, #dce5ef 100%); 
+        }
+        /* 📍 모바일 지명 텍스트 축소 */
+        .modal-content.compact .modal-body p { font-size: 1.05rem; }
+
+        .close-btn { position: fixed; top: 20px; right: 20px; font-size: 40px; color: #fff; cursor: pointer; z-index: 10001; }
+
+        @media (max-width: 850px) {
+            .modal-content { flex-direction: column; }
+            .modal-img { width: 100%; height: 280px; }
+            .modal-body { width: 100%; padding: 25px; }
+            .modal-content.compact { max-width: 95%; }
+        }
+
+        /* --- 지도 --- */
+        .map-wrapper {
+            position: relative; max-width: 1100px; margin: 30px auto; 
+            border: 4px solid rgba(255,255,255,0.2); border-radius: 20px; overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+        }
+        .map-img { width: 100%; display: block; }
+        .map-hotspot { position: absolute; cursor: pointer; z-index: 5; }
+
+        /* --- 본문 스타일 --- */
+        .world-wrapper { max-width: 1000px; margin: 40px auto; padding: 0 15px; }
+        .world-section { margin-bottom: 60px; padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .world-section h2 { color: #80deea; font-family: 'Song Myung', serif; font-size: 2.2rem; margin-bottom: 25px; }
+        .world-section h3 { color: #00ffff; margin-top: 35px; font-size: 1.5rem; border-left: 5px solid #00ffff; padding-left: 15px; }
+        .world-text { color: #fff; line-height: 1.9; font-size: 1.1rem; }
+        .highlight-box { background: rgba(0, 255, 255, 0.05); border-left: 4px solid #00ffff; padding: 25px; margin: 25px 0; border-radius: 0 15px 15px 0; color: #b2ebf2; font-style: italic; }
+        li { margin: 15px 0; padding-left: 30px; position: relative; color: #cfd8dc; }
+        li::before { content: "◈"; position: absolute; left: 0; color: #00ffff; top: 2px; }
+    </style>
+</head>
+<body>
+
+    <!-- [인트로 심볼] -->
+    <div id="intro-overlay">
+        <img src="symbol.png" id="intro-symbol" alt="Academy Symbol">
+    </div>
+
+    <!-- [통합 모달] -->
+    <div id="modal">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div class="modal-content" id="modal-container">
+            <img id="modal-img" src="" class="modal-img">
+            <div class="modal-body">
+                <span id="modal-cat" class="navy-bold" style="font-family: Cinzel; color: #0056b3; font-size: 0.9rem;">CATEGORY</span>
+                <h2 id="modal-title" class="navy-bold" style="font-family: Song Myung; font-size: 2.8rem; margin: 15px 0;">TITLE</h2>
+                <div style="width: 60px; height: 4px; background: #002855; margin-bottom: 30px;"></div>
+                <p id="modal-desc" class="navy-bold" style="font-size: 1.2rem; line-height: 1.8; text-shadow: none; white-space: pre-wrap;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- [메인 메뉴] -->
+    <div id="page-main" class="page" style="display: block;">
+        <div style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+            <h1 class="main-title">인어 아카데미</h1>
+            <div class="btn-group">
+                <button class="nav-btn" onclick="showPage('page-char')">캐릭터 도감</button>
+                <button class="nav-btn" onclick="showPage('page-world')">세계관 기록</button>
+                <button class="nav-btn" onclick="showPage('page-academy')">루미나 아카데미</button>
+                <button class="nav-btn" onclick="showPage('page-map')">지도 기록</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- [캐릭터 도감] -->
+    <div id="page-char" class="page">
+        <div style="padding: 40px 20px; text-align: center;">
+            <button class="nav-btn" onclick="showPage('page-main')" style="font-size: 0.85rem; padding: 10px 25px;">← MENU</button>
+            <h1 class="main-title" style="margin-top: 30px;">CHARACTERS</h1>
+        </div>
+        <div class="container" id="char-grid"></div>
+    </div>
+
+    <!-- [세계관 기록] -->
+    <div id="page-world" class="page">
+        <div style="padding: 40px 20px; text-align: center;">
+            <button class="nav-btn" onclick="showPage('page-main')" style="font-size: 0.85rem; padding: 10px 25px;">← MENU</button>
+            <h1 class="main-title" style="margin-top: 30px;">WORLD VIEW</h1>
+        </div>
+        <div class="world-wrapper">
+            <div class="glass-box">
+                <div class="world-section">
+                    <h2>🌍 1. 세계의 기본 구조</h2>
+                    <p class="world-text">이 세계에는 인간과 인어가 공존합니다. 인간은 지상을, 인어는 심해를 중심으로 살아가며 서로를 인지하되 영역을 침범하지 않는 것이 오랜 암묵적 규칙입니다.</p>
+                    <div class="highlight-box">👉 인어는 전설이 아닌 ‘희귀한 타종족’이며, 쉽게 만날 수 없는 존재입니다.</div>
+                </div>
+                <div class="world-section">
+                    <h2>🧜‍♀️ 2. 인어 종족 설정</h2>
+                    <p class="world-text">바다와 연결된 <strong>마나 생명체</strong>입니다. 꼬리의 색과 형태는 그들의 능력과 본질을 반영합니다.</p>
+                    <ul class="world-text">
+                        <li>◈ 파란 꼬리: 해류 / 정령 계열</li>
+                        <li>◈ 붉은 꼬리: 공격 / 폭발 계열</li>
+                        <li>◈ 녹색 꼬리: 생태 / 회복 계열</li>
+                    </ul>
+                    <p class="world-text">감정의 깊이가 인간보다 강해 형성된 신뢰는 절대적 충성으로, 사랑은 집착으로 발전할 수 있는 종족 특성을 지닙니다.</p>
+                </div>
+                <div class="world-section">
+                    <h2>🏰 3. 인간 세계 구조</h2>
+                    <p class="world-text">제국과 여러 왕국으로 나뉘어 혈통과 권력이 중시되는 사회입니다. 기사단과 모험가가 마물을 토벌하며 고대 유물을 탐색합니다.</p>
+                </div>
+                <div style="text-align: center; color: #80deea; font-style: italic;">“서로를 알고 있지만 결코 같은 세계에 속하지는 않는다.”</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [아카데미 설정] -->
+    <div id="page-academy" class="page">
+        <div style="padding: 40px 20px; text-align: center;">
+            <button class="nav-btn" onclick="showPage('page-main')" style="font-size: 0.85rem; padding: 10px 25px;">← MENU</button>
+            <h1 class="main-title" style="margin-top: 30px;">THE ACADEMY</h1>
+        </div>
+        <div class="world-wrapper">
+            <div class="glass-box">
+                <div class="world-section">
+                    <h2>🏫 루미나 심해 아카데미 설정</h2>
+                    <h3>🌊 기본 개요</h3>
+                    <p class="world-text">심해 깊은 곳 고대 왕궁 유적 위에 세워진 최고 교육 기관입니다. 미래 지도자를 양성하는 핵심 기관이자 왕국의 질서를 유지하는 통제 장치입니다.</p>
+                    
+                    <h3>🏛️ 구조 & 특징</h3>
+                    <p class="world-text">중앙의 거대한 돔 본관과 여러 탑이 연결된 구조로, 건물 전체가 마력에 반응하여 미세하게 형태가 변화하는 <strong>‘살아있는 구조물’</strong>입니다.</p>
+                    
+                    <h3>🎓 교육 체계</h3>
+                    <ul class="world-text">
+                        <li>전투 마법 / 생태·회복 마법 / 정신·음파 마법 / 분석 및 결계</li>
+                        <li>실전 중심 교육과 학생 간 경쟁 구조, 능력과 결과 중심의 평가 기준.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [지도] -->
+    <div id="page-map" class="page">
+        <div style="padding: 40px 20px; text-align: center;">
+            <button class="nav-btn" onclick="showPage('page-main')" style="font-size: 0.85rem; padding: 10px 25px;">← MENU</button>
+            <h1 class="main-title" style="margin-top: 30px;">ACADEMY MAP</h1>
+        </div>
+        <div class="map-wrapper">
+            <img src="map.jpg" class="map-img">
+            <div class="map-hotspot" style="top:40%; left:43%; width:14%; height:12%;" onclick="openMapModal('academy')"></div>
+            <div class="map-hotspot" style="top:18%; left:10%; width:18%; height:14%;" onclick="openMapModal('kingdom')"></div>
+            <div class="map-hotspot" style="top:43%; left:8%; width:18%; height:14%;" onclick="openMapModal('coral')"></div>
+            <div class="map-hotspot" style="top:65%; left:40%; width:18%; height:14%;" onclick="openMapModal('crack')"></div>
+            <div class="map-hotspot" style="top:68%; left:72%; width:18%; height:14%;" onclick="openMapModal('temple')"></div>
+            <div class="map-hotspot" style="top:20%; left:65%; width:18%; height:12%;" onclick="openMapModal('corridor')"></div>
+            <div class="map-hotspot" style="top:68%; left:10%; width:18%; height:12%;" onclick="openMapModal('shipwreck')"></div>
+            <div class="map-hotspot" style="top:12%; left:40%; width:18%; height:10%;" onclick="openMapModal('surface')"></div>
+        </div>
+    </div>
+
+    <script>
+        const characters = [
+            { id: "arselia", name: "아르셀리아 루미나", role: "아카데미 학장 / 관찰자", desc: "백금발과 은빛 비늘을 지닌 수장.\n상냥한 태도 뒤에 깊은 통찰을 숨기고 있으며, 주인공과 아쿠아의 관계를 이미 알고 있다. 해류와 공간을 다루는 최상위 마법 사용자.\n\n“흥미롭군요. 계속 지켜보겠습니다.”" },
+            { id: "silverian", name: "실베리안 크로안", role: "전투 마법 교수 / 실력주의자", desc: "은발과 차가운 눈빛의 전투 교수.\n강자만을 인정하며 노력 없는 자를 철저히 배제한다. 학생들의 성장을 누구보다 중요하게 여기는 실력주의자.\n\n“노력을 하지 않는다면, 여기 있을 가치도 없다.”" },
+            { id: "terra", name: "테라 노엠", role: "생태·회복 교수 / 보호자", desc: "연두빛 머리와 금안의 교수. 말수는 적지만 누구보다 먼저 상처를 돌본다.\n자연형 마법사이며 지상의 숲에 관심을 가지는 이질적인 면이 존재한다.\n\n“다쳤다. …이리 와.”" },
+            { id: "liena", name: "리에나 솔레", role: "정신·음파 교수 / 감정 지배자", desc: "부드러운 미소와 노란 머리의 온화한 교수.\n노래와 음파로 정신을 지배하는 능력을 지녔다. 분노할 때조차 웃음을 잃지 않는 위험한 인물.\n\n“힘들면 조금 쉬어도 돼요.”" },
+            { id: "serena", name: "세레나 블룸", role: "첫 친구 / 보호의 빛", desc: "밝은 성격과 따뜻한 미소의 소유자.\n치유와 보호막 능력으로 주변을 지키는 정석 히로인. 사소한 취미로 복숭아를 좋아한다.\n\n“같이 해보자! 분명 잘 될 거야!”" },
+            { id: "kayla", name: "카일라 플레어핀", role: "전투 친구 / 폭발 에너지", desc: "붉은 머리와 상어 이빨을 가진 활발한 인어.\n싸움을 즐기는 열혈 성격. 고온 수류를 폭발시키는 공격형 마법 사용자.\n\n“와 재밌겠다! 싸우는 거지?!”" },
+            { id: "yuria", name: "유리아 노크스", role: "우등생 / 라이벌", desc: "검은 머리와 냉정한 시선의 우등생.\n모든 것을 분석하고 통제하려는 완벽주의자. 결계와 마법 해체에 특화되어 있다.\n\n“비효율적이야. 그렇게 하면 실패해.”" },
+            { id: "aqua", name: "아쿠아 릴리아", role: "제1왕녀 / 약혼자", desc: "하늘빛 머리의 보라색 눈을 지닌 왕녀.\n왕족의 책임을 최우선으로 여기며, 주인공과의 약혼을 ‘의무’로 받아들이고 있다.\n\n“당신은… 제 약혼자니까요. 지켜드릴게요.”" },
+            { id: "mira", name: "미라 벨루나", role: "츤데레 / 가속 능력자", desc: "연보라 포니테일의 까칠한 인어.\n빠른 속도와 가속 마법을 사용하는 전투원. 내면에는 깊은 외로움을 품고 주인공에게 흔들린다.\n\n“착각하지 마! 너 도와준 거 아니거든?!”" }
+        ];
+
+        const locations = {
+            academy: { title: "루미나 심해 아카데미", cat: "LOCATION", desc: "심해 마력 흐름의 중심. 건물 전체가 마력에 반응하여 변형됩니다." },
+            kingdom: { title: "아쿠아리온 해저 왕국", cat: "KINGDOM", desc: "북쪽의 안정된 해류 지대. 왕족은 정령과 계약하여 바다의 의지를 다스립니다." },
+            corridor: { title: "에르딘 해류 회랑", cat: "PASSAGE", desc: "방향 감각이 왜곡되는 고속 해류 통로. 숙련자만이 사용할 수 있는 지름길입니다." },
+            coral: { title: "루멘 산호 숲", cat: "ECOSYSTEM", desc: "발광 산호가 빛을 밝히는 해역. 자연 마력이 응축되어 치유의 중심이 됩니다." },
+            crack: { title: "심연의 균열", cat: "DANGER ZONE", desc: "끝이 보이지 않는 거대 균열. 마력이 비정상적으로 뒤틀린 금지 구역입니다." },
+            temple: { title: "고대 해저 신전", cat: "RUINS", desc: "과거 문명과 현재를 잇는 고대 건축물. 잊힌 기술의 흔적이 남아 있습니다." },
+            shipwreck: { title: "난파선 해역", cat: "BORDER", desc: "인간 선박의 잔해가 쌓인 지역. 인간 세계와 인어 세계가 맞닿은 흔적입니다." },
+            surface: { title: "경계 수면층", cat: "GATEWAY", desc: "지상과 심해의 경계 영역. 두 종족의 유일한 접점이 되는 곳입니다." }
+        };
+
+        const charGrid = document.getElementById('char-grid');
+        characters.forEach((char) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `<img src="${char.id}.jpg" onclick="openCharModal('${char.id}')"><div class="card-info"><span class="navy-bold" style="font-family:Cinzel; font-size:0.8rem; opacity:0.6;">${char.role}</span><h2 class="navy-bold" style="font-family:Song Myung; margin:10px 0;">${char.name}</h2></div>`;
+            charGrid.appendChild(card);
+        });
+
+        function openCharModal(id) {
+            const char = characters.find(c => c.id === id);
+            const container = document.getElementById('modal-container');
+            container.classList.remove('compact');
+            document.getElementById('modal-img').src = `${char.id}_large.jpg`;
+            document.getElementById('modal-title').innerText = char.name;
+            document.getElementById('modal-cat').innerText = char.role;
+            document.getElementById('modal-desc').innerText = char.desc;
+            document.getElementById('modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openMapModal(key) {
+            const loc = locations[key];
+            const container = document.getElementById('modal-container');
+            container.classList.add('compact'); // 지명 팝업 크기 축소
+            document.getElementById('modal-img').src = `${key}_large.jpg`;
+            document.getElementById('modal-title').innerText = loc.title;
+            document.getElementById('modal-cat').innerText = loc.cat;
+            document.getElementById('modal-desc').innerText = loc.desc;
+            document.getElementById('modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function showPage(pageId) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(p => p.classList.remove('active'));
+            setTimeout(() => {
+                pages.forEach(p => p.style.display = 'none');
+                const target = document.getElementById(pageId);
+                target.style.display = 'block';
+                setTimeout(() => { target.classList.add('active'); window.scrollTo(0,0); }, 50);
+            }, 300);
+        }
+
+        /* 버블 생성 */
+        for(let i=0; i<15; i++) {
+            const b = document.createElement("div"); b.className = "bubble";
+            const s = (Math.random()*12+4)+"px"; b.style.left = Math.random()*100+"vw";
+            b.style.width = s; b.style.height = s; b.style.animationDuration = (Math.random()*5+10)+"s";
+            document.body.appendChild(b);
+        }
+
+        window.onload = () => { setTimeout(() => document.getElementById('page-main').classList.add('active'), 1400); };
+    </script>
+</body>
+</html>
